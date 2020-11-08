@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <fstream>
 
 template<typename T, int ORDER>
 class btree{
@@ -162,15 +163,66 @@ struct Record
     long offset;  
 };
 
-int main( )
+class Page
 {
-    using btree_int = btree<std::string, 3>;
-    btree_int bt;
-    bt.insert("a");
-    bt.insert("b");
-    bt.insert("c");
-    bt.insert("d");
-    bt.insert("e");
-    bt.print();
-    return 0;
-}
+private:
+    Record  *m_ED;
+    int m_size;
+    int m_current;
+    unsigned long m_pNext;
+    char m_DataFile[100];
+       
+public:
+    Page(char *  filename)
+    {
+        // Abre el archivo data.dat 
+        strcpy(m_DataFile,filename);
+    } 
+    Record* getList() {
+        return m_ED;
+    }
+    void Execute()
+    {
+        ifstream file(m_DataFile, ios::binary);
+        Record r;
+        char temp[200];
+
+        while(file.peek() != EOF) {
+        r.pdir = file.tellg();
+        r.offset = sizeof(Record);
+        file.read((char*)temp, 10);
+        strcpy(r.key,temp);
+        file.read((char*)temp, 200);
+        m_ED.push_back(r);
+        } 
+            // Se encarga de indexar el archivo
+    }
+    void Write() {
+        ofstream file("index.dat", ios::binary);
+        for(auto e: m_ED) {
+            file.write((char*)&e, sizeof(Record));
+        }
+    }  // Guarda en Disco el archico index.dat 
+
+    void Read() {
+        ifstream file("index.dat", ios::binary);
+        while(file.peek() != EOF) {
+            Record r;
+            file.read((char*)&r, sizeof(Record));
+            m_ED.push_back(r);
+        }
+    }
+
+    void Find(char * key) {
+        for(auto e: m_ED) {
+            if(strcmp(e.key,key) == 0 ) {
+            ifstream file(m_DataFile, ios::binary);
+            file.seekg(e.pdir);
+            Record P;
+            file.read((char*)&P, sizeof(Record));
+            P.Print();
+            return;
+            }
+        }
+    }
+};
